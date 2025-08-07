@@ -1,0 +1,25 @@
+[
+   {
+    "firstname": "Abhishek",
+     "lastname": "Anand",
+     "email": "abhishek.anand@example.com",
+    "gender": "Male",
+     "mobile": "9999999999",
+    "address": "Lakhnawali",
+    "state": "NCR",
+    "city": "Delhi"
+  },
+
+    {
+    "firstname": "Abhi",
+     "lastname": "Anand",
+     "email": "abhi.anand@example.com",
+    "gender": "Male",
+     "mobile": "9999999999",
+    "address": "Lakhnawali_Extension",
+    "state": "NCR",
+    "city": "Delhi"
+
+
+  }
+    ]
