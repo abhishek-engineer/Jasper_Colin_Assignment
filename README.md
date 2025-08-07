@@ -5,7 +5,7 @@ It automates the form submission on https://demoqa.com/automation-practice-form.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 profile_form_framework/
@@ -30,7 +30,7 @@ profile_form_framework/
 
 ---
 
-## ⚙️ Installation
+## Installation
 
 ```bash
 python -m venv .venv
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 Edit the `config/config.yaml` to update form URL:
 
@@ -50,7 +50,7 @@ form_url: "https://demoqa.com/automation-practice-form"
 
 ---
 
-## 🧪 Running the Tests
+## Running the Tests
 
 ### Headed Mode (see browser):
 
@@ -73,7 +73,7 @@ allure serve reports/allure-results
 
 ---
 
-## 📌 Features
+## Features
 
 - Data-driven testing with `@pytest.mark.parametrize`
 - Configurable browser and environment using `config.yaml`
@@ -83,9 +83,4 @@ allure serve reports/allure-results
 
 ---
 
-## 👤 Author
 
-**Abhishek Anand**  
-📧 [abhishek.2007anand@gmail.com]  
-📍 India  
-🔗 [https://www.linkedin.com/in/abhishek-anand-13121944/]
