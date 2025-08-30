@@ -1,0 +1,45 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.10'
+      addToPath: true
+
+  - script: python -m pip install --upgrade pip
+    displayName: 'Upgrade pip'
+
+  - script: pip install -r requirements.txt
+    displayName: 'Install dependencies'
+
+  # Run PyTest with Allure plugin
+  - script: pytest --alluredir=allure-results
+    displayName: 'Run PyTest with Allure reporting'
+
+  # Install Allure commandline
+  - script: |
+      sudo apt-add-repository ppa:qameta/allure -y
+      sudo apt-get update
+      sudo apt-get install allure -y
+    displayName: 'Install Allure CLI'
+
+  # Generate Allure report
+  - script: allure generate allure-results -o allure-report --clean
+    displayName: 'Generate Allure Report'
+
+  # Publish Allure report as artifact
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: 'allure-report'
+      ArtifactName: 'AllureReport'
+      publishLocation: 'Container'
+    displayName: 'Publish Allure Report'
