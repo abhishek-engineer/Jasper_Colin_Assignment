@@ -6,8 +6,11 @@
 trigger:
 - main
 
+# Use your self-hosted agent pool instead of Microsoft-hosted VM
 pool:
-  vmImage: ubuntu-latest
+  name: Default
+  demands:
+    - agent.name -equals BAI-ABHISHEKANA
 
 steps:
   - task: UsePythonVersion@0
@@ -25,11 +28,9 @@ steps:
   - script: pytest --alluredir=allure-results
     displayName: 'Run PyTest with Allure reporting'
 
-  # Install Allure commandline
-  - script: |
-      sudo apt-add-repository ppa:qameta/allure -y
-      sudo apt-get update
-      sudo apt-get install allure -y
+  # Install Allure CLI (Windows version since your agent is Windows)
+  - powershell: |
+      choco install allure-commandline -y
     displayName: 'Install Allure CLI'
 
   # Generate Allure report
