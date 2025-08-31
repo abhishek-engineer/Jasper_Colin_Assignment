@@ -1,0 +1,57 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: Default            # Use your self-hosted agent pool
+  demands:
+    - agent.os -equals Windows_NT
+
+variables:
+  VENV_PATH: '.venv'
+
+steps:
+# 1️⃣ Checkout repository
+- task: Checkout@1
+
+# 2️⃣ Verify Python version
+- powershell: |
+    python --version
+    py -3 --version
+  displayName: 'Verify Python Version'
+
+# 3️⃣ Setup virtual environment and install dependencies
+- powershell: |
+    python -m venv $(VENV_PATH)
+    .\$(VENV_PATH)\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Setup Python virtual environment'
+
+# 4️⃣ Run PyTest and generate XML report
+- powershell: |
+    .\$(VENV_PATH)\Scripts\Activate.ps1
+    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml
+  displayName: 'Run PyTest Tests'
+
+# 5️⃣ Publish test results to Azure DevOps Test tab
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: 'reports/results.xml'
+    testRunTitle: 'PyTest Results'
+    mergeTestResults: true
+    failTaskOnFailedTests: true
+
+# 6️⃣ Publish test reports as build artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'reports'
+    ArtifactName: 'TestReports'
+    publishLocation: 'Container'
