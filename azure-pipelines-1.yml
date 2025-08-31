@@ -22,16 +22,16 @@ steps:
     pip --version
   displayName: 'Verify Python Version'
 
-# Step 3: Upgrade pip (avoid dependency resolver issues)
+# Step 3: Upgrade pip, setuptools, and wheel
 - script: |
-    python -m pip install --upgrade pip
-  displayName: 'Upgrade pip'
+    python -m pip install --upgrade pip setuptools wheel
+  displayName: 'Upgrade pip, setuptools, wheel'
 
-# Step 4: Install dependencies safely (includes Selenium >=4.10)
+# Step 4: Install dependencies safely (legacy resolver)
 - script: |
     pip install --upgrade selenium
-    pip install -r requirements.txt || pip install -r requirements.txt --use-deprecated=legacy-resolver
-  displayName: 'Install Dependencies'
+    pip install -r requirements.txt --use-deprecated=legacy-resolver
+  displayName: 'Install Dependencies Safely'
 
 # Step 5: Run PyTest tests and generate JUnit XML report
 - script: |
