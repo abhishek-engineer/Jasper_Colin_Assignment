@@ -7,37 +7,48 @@ trigger:
 - main
 
 pool:
-  name: 'Default'
+  name: 'Default'   # Default agent pool
 
 steps:
+# Step 1: Use Python 3.10
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.10'
     addToPath: true
 
+# Step 2: Verify Python installation
 - script: |
     python --version
     pip --version
   displayName: 'Verify Python Version'
 
+# Step 3: Upgrade pip (avoid dependency resolver issues)
 - script: |
     python -m pip install --upgrade pip
-    pip install -r requirements.txt
+  displayName: 'Upgrade pip'
+
+# Step 4: Install dependencies safely
+# Option A: normal install
+# Option B: fallback to legacy resolver if conflicts occur
+- script: |
+    pip install -r requirements.txt || pip install -r requirements.txt --use-deprecated=legacy-resolver
   displayName: 'Install Dependencies'
 
+# Step 5: Run PyTest tests and generate JUnit XML report
 - script: |
-    pytest --maxfail=1 --disable-warnings --junitxml=results.xml
+    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml
   displayName: 'Run PyTest Tests'
 
+# Step 6: Publish test results in DevOps UI
 - task: PublishTestResults@2
   inputs:
-    testResultsFiles: '**/results.xml'
+    testResultsFiles: '**/reports/results.xml'
     testResultsFormat: 'JUnit'
     failTaskOnFailedTests: true
 
+# Step 7: Publish artifact (only reports folder)
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(Build.SourcesDirectory)'
-    ArtifactName: 'PyTest_Artifact'
+    PathtoPublish: 'reports'
+    ArtifactName: 'PyTest_Reports'
     publishLocation: 'Container'
-
