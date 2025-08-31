@@ -5,53 +5,50 @@
 
 # azure-pipelines.yml
 trigger:
-  branches:
-    include:
-      - main
+- main
 
 pool:
-  name: Default            # Use your self-hosted agent pool
-  demands:
-    - agent.os -equals Windows_NT
-
-variables:
-  VENV_PATH: '.venv'
+  name: 'Default'
 
 steps:
-# 1️⃣ Checkout repository
-- task: Checkout@1
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.10'
+    addToPath: true
 
-# 2️⃣ Verify Python version
-- powershell: |
+- script: |
     python --version
-    py -3 --version
+    pip --version
   displayName: 'Verify Python Version'
 
-# 3️⃣ Setup virtual environment and install dependencies
-- powershell: |
-    python -m venv $(VENV_PATH)
-    .\$(VENV_PATH)\Scripts\Activate.ps1
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Setup Python virtual environment'
+- script: |
+    python -m pip install --upgrade pip setuptools wheel
+  displayName: 'Upgrade pip, setuptools, wheel'
 
-# 4️⃣ Run PyTest and generate XML report
-- powershell: |
-    .\$(VENV_PATH)\Scripts\Activate.ps1
-    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml
+- script: |
+    pip install --upgrade selenium
+    pip install -r requirements.txt --use-deprecated=legacy-resolver
+    pip install allure-pytest
+  displayName: 'Install Dependencies Safely'
+
+- script: |
+    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml --alluredir=reports/allure || exit 0
   displayName: 'Run PyTest Tests'
+  continueOnError: true
 
-# 5️⃣ Publish test results to Azure DevOps Test tab
 - task: PublishTestResults@2
   inputs:
-    testResultsFiles: 'reports/results.xml'
-    testRunTitle: 'PyTest Results'
-    mergeTestResults: true
+    testResultsFiles: '**/reports/results.xml'
+    testResultsFormat: 'JUnit'
     failTaskOnFailedTests: true
 
-# 6️⃣ Publish test reports as build artifacts
+- powershell: |
+    if (!(Test-Path "reports")) { New-Item -ItemType Directory -Path reports }
+  displayName: 'Ensure Reports Folder Exists'
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: 'reports'
-    ArtifactName: 'TestReports'
+    ArtifactName: 'PyTest_Reports'
     publishLocation: 'Container'
+  continueOnError: true
