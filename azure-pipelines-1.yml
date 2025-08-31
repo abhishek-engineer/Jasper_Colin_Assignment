@@ -34,31 +34,20 @@ steps:
     pip install allure-pytest
   displayName: 'Install Dependencies Safely'
 
-# Step 5: Install Allure CLI via Chocolatey
-- powershell: |
-    choco install allure -y
-  displayName: 'Install Allure CLI via Chocolatey'
-
-# Step 6: Run PyTest tests with JUnit + Allure
+# Step 5: Run PyTest tests with JUnit + Allure
 - script: |
     pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml --alluredir=reports/allure || exit 0
   displayName: 'Run PyTest Tests'
   continueOnError: true
 
-# Step 7: Generate Allure HTML report
-- powershell: |
-    if (!(Test-Path "reports/allure")) { New-Item -ItemType Directory -Path reports/allure } 
-    allure generate reports/allure -o reports/allure-report --clean
-  displayName: 'Generate Allure HTML Report'
-
-# Step 8: Publish test results in DevOps UI
+# Step 6: Publish test results in DevOps UI
 - task: PublishTestResults@2
   inputs:
     testResultsFiles: '**/reports/results.xml'
     testResultsFormat: 'JUnit'
     failTaskOnFailedTests: true
 
-# Step 9: Publish artifact (JUnit + Allure report)
+# Step 7: Publish artifact (JUnit + Allure results)
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: 'reports'
