@@ -22,33 +22,52 @@ steps:
     pip --version
   displayName: 'Verify Python Version'
 
-# Step 3: Upgrade pip, setuptools, and wheel
+# Step 3: Upgrade pip, setuptools, wheel
 - script: |
     python -m pip install --upgrade pip setuptools wheel
   displayName: 'Upgrade pip, setuptools, wheel'
 
-# Step 4: Install dependencies safely (legacy resolver)
+# Step 4: Install dependencies (include Selenium & Allure-pytest)
 - script: |
     pip install --upgrade selenium
     pip install -r requirements.txt --use-deprecated=legacy-resolver
+    pip install allure-pytest
   displayName: 'Install Dependencies Safely'
 
-# Step 5: Run PyTest tests and always generate JUnit XML
-- script: |
-    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml || exit 0
-  displayName: 'Run PyTest Tests'
-  continueOnError: true  # allows next steps to run even if tests fail
+# Step 5: Download Allure CLI
+- powershell: |
+    Invoke-WebRequest -Uri https://github.com/allure-framework/allure2/releases/download/2.27.2/allure-2.27.2.zip -OutFile allure.zip
+    Expand-Archive allure.zip -DestinationPath $(Build.SourcesDirectory)\allure
+  displayName: 'Download Allure CLI'
 
-# Step 6: Publish test results in DevOps UI
+# Step 6: Add Allure to PATH
+- powershell: |
+    $env:PATH = "$(Build.SourcesDirectory)\allure\allure-2.27.2\bin;" + $env:PATH
+  displayName: 'Add Allure to PATH'
+
+# Step 7: Run PyTest tests with JUnit + Allure
+- script: |
+    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml --alluredir=reports/allure || exit 0
+  displayName: 'Run PyTest Tests'
+  continueOnError: true
+
+# Step 8: Generate Allure HTML report
+- powershell: |
+    if (!(Test-Path "reports/allure")) { New-Item -ItemType Directory -Path reports/allure } 
+    allure generate reports/allure -o reports/allure-report --clean
+  displayName: 'Generate Allure HTML Report'
+
+# Step 9: Publish test results in DevOps UI
 - task: PublishTestResults@2
   inputs:
     testResultsFiles: '**/reports/results.xml'
     testResultsFormat: 'JUnit'
-    failTaskOnFailedTests: true  # this ensures failed tests are shown
+    failTaskOnFailedTests: true
 
-# Step 7: Publish artifact (only reports folder)
+# Step 10: Publish artifact (JUnit + Allure report)
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: 'reports'
     ArtifactName: 'PyTest_Reports'
     publishLocation: 'Container'
+  continueOnError: true  # ensures artifact publishing never fails
