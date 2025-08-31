@@ -6,41 +6,55 @@
 trigger:
 - main
 
-# Use your self-hosted agent pool instead of Microsoft-hosted VM
 pool:
-  name: Default
-  demands:
-    - agent.name -equals BAI-ABHISHEKANA
+  name: 'Default'
 
 steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.10'
-      addToPath: true
+# Step 1: Use Python 3.10
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.10'
+    addToPath: true
 
-  - script: python -m pip install --upgrade pip
-    displayName: 'Upgrade pip'
+# Step 2: Verify Python installation
+- script: |
+    python --version
+    pip --version
+  displayName: 'Verify Python Version'
 
-  - script: pip install -r requirements.txt
-    displayName: 'Install dependencies'
+# Step 3: Upgrade pip, setuptools, wheel
+- script: |
+    python -m pip install --upgrade pip setuptools wheel
+  displayName: 'Upgrade pip, setuptools, wheel'
 
-  # Run PyTest with Allure plugin
-  - script: pytest --alluredir=allure-results
-    displayName: 'Run PyTest with Allure reporting'
+# Step 4: Install dependencies (Selenium + Allure-pytest)
+- script: |
+    pip install --upgrade selenium
+    pip install -r requirements.txt --use-deprecated=legacy-resolver
+    pip install allure-pytest
+  displayName: 'Install Dependencies Safely'
 
-  # Install Allure CLI (Windows version since your agent is Windows)
-  - powershell: |
-      choco install allure-commandline -y
-    displayName: 'Install Allure CLI'
+# Step 5: Run PyTest tests with JUnit XML + Allure results
+- script: |
+    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml --alluredir=reports/allure || exit 0
+  displayName: 'Run PyTest Tests'
+  continueOnError: true  # ensures artifacts are published even if tests fail
 
-  # Generate Allure report
-  - script: allure generate allure-results -o allure-report --clean
-    displayName: 'Generate Allure Report'
+# Step 6: Publish test results in DevOps UI
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: '**/reports/results.xml'
+    testResultsFormat: 'JUnit'
+    failTaskOnFailedTests: true  # marks test failures in UI
 
-  # Publish Allure report as artifact
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: 'allure-report'
-      ArtifactName: 'AllureReport'
-      publishLocation: 'Container'
-    displayName: 'Publish Allure Report'
+# Step 7: Publish artifacts (JUnit + Allure results)
+- powershell: |
+    if (!(Test-Path "reports")) { New-Item -ItemType Directory -Path reports }
+  displayName: 'Ensure Reports Folder Exists'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'reports'
+    ArtifactName: 'PyTest_Reports'
+    publishLocation: 'Container'
+  continueOnError: true  # ensures artifact publishing never fails
