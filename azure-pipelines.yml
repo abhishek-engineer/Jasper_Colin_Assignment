@@ -3,58 +3,55 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
+# azure-pipelines.yml
 trigger:
-- main
+  branches:
+    include:
+      - main
 
 pool:
-  name: 'Default'
+  name: Default            # Use your self-hosted agent pool
+  demands:
+    - agent.os -equals Windows_NT
+
+variables:
+  VENV_PATH: '.venv'
 
 steps:
-# Step 1: Use Python 3.10
+# 1️⃣ Checkout the repository
+- task: Checkout@1
+
+# 2️⃣ Set up Python 3.13
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.10'
+    versionSpec: '3.13'
     addToPath: true
 
-# Step 2: Verify Python installation
-- script: |
-    python --version
-    pip --version
-  displayName: 'Verify Python Version'
+# 3️⃣ Create and activate virtual environment, install dependencies
+- powershell: |
+    python -m venv $(VENV_PATH)
+    .\$(VENV_PATH)\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Setup Python virtual environment'
 
-# Step 3: Upgrade pip, setuptools, wheel
-- script: |
-    python -m pip install --upgrade pip setuptools wheel
-  displayName: 'Upgrade pip, setuptools, wheel'
-
-# Step 4: Install dependencies (Selenium + Allure-pytest)
-- script: |
-    pip install --upgrade selenium
-    pip install -r requirements.txt --use-deprecated=legacy-resolver
-    pip install allure-pytest
-  displayName: 'Install Dependencies Safely'
-
-# Step 5: Run PyTest tests with JUnit XML + Allure results
-- script: |
-    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml --alluredir=reports/allure || exit 0
+# 4️⃣ Run PyTest tests and generate XML report
+- powershell: |
+    .\$(VENV_PATH)\Scripts\Activate.ps1
+    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml
   displayName: 'Run PyTest Tests'
-  continueOnError: true  # ensures artifacts are published even if tests fail
 
-# Step 6: Publish test results in DevOps UI
+# 5️⃣ Publish test results to Azure DevOps Test tab
 - task: PublishTestResults@2
   inputs:
-    testResultsFiles: '**/reports/results.xml'
-    testResultsFormat: 'JUnit'
-    failTaskOnFailedTests: true  # marks test failures in UI
+    testResultsFiles: 'reports/results.xml'
+    testRunTitle: 'PyTest Results'
+    mergeTestResults: true
+    failTaskOnFailedTests: true
 
-# Step 7: Publish artifacts (JUnit + Allure results)
-- powershell: |
-    if (!(Test-Path "reports")) { New-Item -ItemType Directory -Path reports }
-  displayName: 'Ensure Reports Folder Exists'
-
+# 6️⃣ Publish test reports as build artifacts
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: 'reports'
-    ArtifactName: 'PyTest_Reports'
+    ArtifactName: 'TestReports'
     publishLocation: 'Container'
-  continueOnError: true  # ensures artifact publishing never fails
