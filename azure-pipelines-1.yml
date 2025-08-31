@@ -7,7 +7,7 @@ trigger:
 - main
 
 pool:
-  name: 'Default'   # Default agent pool
+  name: 'Default'
 
 steps:
 # Step 1: Use Python 3.10
@@ -33,17 +33,18 @@ steps:
     pip install -r requirements.txt --use-deprecated=legacy-resolver
   displayName: 'Install Dependencies Safely'
 
-# Step 5: Run PyTest tests and generate JUnit XML report
+# Step 5: Run PyTest tests and always generate JUnit XML
 - script: |
-    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml
+    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml || exit 0
   displayName: 'Run PyTest Tests'
+  continueOnError: true  # allows next steps to run even if tests fail
 
 # Step 6: Publish test results in DevOps UI
 - task: PublishTestResults@2
   inputs:
     testResultsFiles: '**/reports/results.xml'
     testResultsFormat: 'JUnit'
-    failTaskOnFailedTests: true
+    failTaskOnFailedTests: true  # this ensures failed tests are shown
 
 # Step 7: Publish artifact (only reports folder)
 - task: PublishBuildArtifacts@1
