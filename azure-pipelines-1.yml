@@ -27,10 +27,9 @@ steps:
     python -m pip install --upgrade pip
   displayName: 'Upgrade pip'
 
-# Step 4: Install dependencies safely
-# Option A: normal install
-# Option B: fallback to legacy resolver if conflicts occur
+# Step 4: Install dependencies safely (includes Selenium >=4.10)
 - script: |
+    pip install --upgrade selenium
     pip install -r requirements.txt || pip install -r requirements.txt --use-deprecated=legacy-resolver
   displayName: 'Install Dependencies'
 
