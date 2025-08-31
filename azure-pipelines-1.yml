@@ -1,0 +1,48 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  name: 'Default'   # Use the default agent pool
+
+steps:
+# Step 1: Use Python 3.12.6
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.12.6'
+    addToPath: true
+
+# Step 2: Verify Python installation
+- script: |
+    python --version
+    pip --version
+  displayName: 'Verify Python Version'
+
+# Step 3: Install dependencies
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install Dependencies'
+
+# Step 4: Run PyTest tests
+- script: |
+    pytest --maxfail=1 --disable-warnings --junitxml=results.xml
+  displayName: 'Run PyTest Tests'
+
+# Step 5: Publish test results (optional, shows in DevOps UI)
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: '**/results.xml'
+    testResultsFormat: 'JUnit'
+    failTaskOnFailedTests: true
+
+# Step 6: Publish artifact
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.SourcesDirectory)'
+    ArtifactName: 'PyTest_Artifact'
+    publishLocation: 'Container'
