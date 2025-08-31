@@ -4,20 +4,23 @@
 # https://aka.ms/yaml
 
 # azure-pipelines.yml
+# azure-pipelines.yml
 trigger:
   branches:
     include:
       - main
 
 pool:
-  name: Default            # Use your self-hosted agent pool
+  name: Default            # Your self-hosted agent pool
   demands:
     - agent.os -equals Windows_NT
 
 variables:
   VENV_PATH: '.venv'
+  REPORTS_DIR: 'reports'
 
 steps:
+
 # 1️⃣ Checkout repository
 - task: Checkout@1
 
@@ -29,29 +32,42 @@ steps:
 
 # 3️⃣ Setup virtual environment and install dependencies
 - powershell: |
+    # Remove existing venv if present
+    if (Test-Path $(VENV_PATH)) { Remove-Item -Recurse -Force $(VENV_PATH) }
+
+    # Create virtual environment
     python -m venv $(VENV_PATH)
+
+    # Activate venv and upgrade pip
     .\$(VENV_PATH)\Scripts\Activate.ps1
     python -m pip install --upgrade pip
+
+    # Install dependencies
     pip install -r requirements.txt
   displayName: 'Setup Python virtual environment'
 
-# 4️⃣ Run PyTest and generate XML report
+# 4️⃣ Ensure reports folder exists
+- powershell: |
+    if (-not (Test-Path $(REPORTS_DIR))) { New-Item -ItemType Directory -Path $(REPORTS_DIR) }
+  displayName: 'Create reports folder'
+
+# 5️⃣ Run PyTest and generate XML report
 - powershell: |
     .\$(VENV_PATH)\Scripts\Activate.ps1
-    pytest --maxfail=1 --disable-warnings --junitxml=reports/results.xml
+    pytest --maxfail=1 --disable-warnings --junitxml=$(REPORTS_DIR)/results.xml
   displayName: 'Run PyTest Tests'
 
-# 5️⃣ Publish test results to Azure DevOps Test tab
+# 6️⃣ Publish test results to Azure DevOps Test tab
 - task: PublishTestResults@2
   inputs:
-    testResultsFiles: 'reports/results.xml'
+    testResultsFiles: '$(REPORTS_DIR)/results.xml'
     testRunTitle: 'PyTest Results'
     mergeTestResults: true
     failTaskOnFailedTests: true
 
-# 6️⃣ Publish test reports as build artifacts
+# 7️⃣ Publish test reports as build artifacts
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: 'reports'
+    PathtoPublish: '$(REPORTS_DIR)'
     ArtifactName: 'TestReports'
     publishLocation: 'Container'
