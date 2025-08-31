@@ -1,9 +1,3 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-# azure-pipelines.yml
 # azure-pipelines.yml
 trigger:
   branches:
@@ -11,17 +5,16 @@ trigger:
       - main
 
 pool:
-  name: Default            # Your self-hosted agent pool
+  name: Default
   demands:
     - agent.os -equals Windows_NT
 
 variables:
   VENV_PATH: '.venv'
   REPORTS_DIR: 'reports'
-  PYTHON_PATH: 'C:\Python313\python.exe'  # <-- Replace with your actual Python path
+  PYTHON_PATH: 'C:\Python313\python.exe' # <-- Replace with your actual Python path
 
 steps:
-
 # 1️⃣ Checkout repository
 - task: Checkout@1
 
@@ -38,12 +31,12 @@ steps:
     # Create virtual environment using full Python path
     $(PYTHON_PATH) -m venv $(VENV_PATH)
 
-    # Activate venv and upgrade pip
-    .\$(VENV_PATH)\Scripts\Activate.ps1
-    python -m pip install --upgrade pip
+    # Activate venv
+    & ".\$(VENV_PATH)\Scripts\Activate.ps1"
 
-    # Install dependencies
-    pip install -r requirements.txt
+    # Upgrade pip and install dependencies using venv's python
+    $(VENV_PATH)\Scripts\python.exe -m pip install --upgrade pip
+    $(VENV_PATH)\Scripts\python.exe -m pip install -r requirements.txt
   displayName: 'Setup Python virtual environment'
 
 # 4️⃣ Ensure reports folder exists
@@ -53,8 +46,8 @@ steps:
 
 # 5️⃣ Run PyTest and generate XML report
 - powershell: |
-    .\$(VENV_PATH)\Scripts\Activate.ps1
-    pytest --maxfail=1 --disable-warnings --junitxml=$(REPORTS_DIR)/results.xml
+    & ".\$(VENV_PATH)\Scripts\Activate.ps1"
+    $(VENV_PATH)\Scripts\pytest.exe --maxfail=1 --disable-warnings --junitxml=$(REPORTS_DIR)/results.xml
   displayName: 'Run PyTest Tests'
 
 # 6️⃣ Publish test results to Azure DevOps Test tab
