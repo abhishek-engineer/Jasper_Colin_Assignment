@@ -6,7 +6,7 @@ pipeline {
         VENV = ".venv"
         STAGING_SERVER = "staging.example.com"
         PROD_SERVER = "prod.example.com"
-        REPO_URL = "https://github.com/abhishek-engineer/Jasper_Colin_Assignment.git"
+        REPO_URL = "https://github.com/<your-username>/<your-repo>.git"
     }
 
     stages {
@@ -16,7 +16,7 @@ pipeline {
             }
         }
 
-        stage('Setup Python Env') {
+        stage('Setup Python Environment') {
             steps {
                 sh '''
                 if [ ! -d "${VENV}" ]; then
@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
+        stage('Run Automation Tests') {
             steps {
                 sh '''
                 source ${VENV}/bin/activate
@@ -39,32 +39,3 @@ pipeline {
             post {
                 always {
                     archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
-                    junit 'reports/results.xml'
-                }
-            }
-        }
-
-        stage('Deploy to Staging') {
-            when { branch 'main' }
-            steps {
-                sh '''
-                ssh user@${STAGING_SERVER} "cd /app && git pull && systemctl restart myapp"
-                '''
-            }
-        }
-
-        stage('Approval for Prod') {
-            steps {
-                input message: "Do you want to deploy to Production?", ok: "Deploy"
-            }
-        }
-
-        stage('Deploy to Prod') {
-            steps {
-                sh '''
-                ssh user@${PROD_SERVER} "cd /app && git pull && systemctl restart myapp"
-                '''
-            }
-        }
-    }
-}
