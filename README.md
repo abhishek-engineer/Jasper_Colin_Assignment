@@ -15,13 +15,18 @@ profile_form_framework/
 │
 ├── pages/                      # Page Object Model files
 │   └── profile_form_page.py
-│
+
+├── config/                     # Contains environment-specific YAML config
+│   └── config.yaml│
 ├── tests/                      # Test cases using PyTest
 │   └── test_profile_form.py
 │
 ├── utils/                      # Utility functions
 │   └── data_loader.py
-│
+├── data/                  # Sample user data for form submission
+│   └── user_data.json
+├── reports/                     # Test reports storage
+│   └── allure-results│
 ├── conftest.py                 # Shared fixtures and setup/teardown logic
 ├── requirements.txt            # Project dependencies
 ├── pytest.ini                  # PyTest configuration file
