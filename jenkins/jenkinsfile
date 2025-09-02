@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+
+    environment {
+        PYTHON = "/usr/bin/python3"
+        VENV = ".venv"
+        STAGING_SERVER = "staging.example.com"
+        PROD_SERVER = "prod.example.com"
+        REPO_URL = "https://github.com/abhishek-engineer/Jasper_Colin_Assignment.git"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: "${env.REPO_URL}"
+            }
+        }
+
+        stage('Setup Python Env') {
+            steps {
+                sh '''
+                if [ ! -d "${VENV}" ]; then
+                    ${PYTHON} -m venv ${VENV}
+                fi
+                source ${VENV}/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh '''
+                source ${VENV}/bin/activate
+                pytest --alluredir=reports/allure-results --junitxml=reports/results.xml
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
+                    junit 'reports/results.xml'
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when { branch 'main' }
+            steps {
+                sh '''
+                ssh user@${STAGING_SERVER} "cd /app && git pull && systemctl restart myapp"
+                '''
+            }
+        }
+
+        stage('Approval for Prod') {
+            steps {
+                input message: "Do you want to deploy to Production?", ok: "Deploy"
+            }
+        }
+
+        stage('Deploy to Prod') {
+            steps {
+                sh '''
+                ssh user@${PROD_SERVER} "cd /app && git pull && systemctl restart myapp"
+                '''
+            }
+        }
+    }
+}
